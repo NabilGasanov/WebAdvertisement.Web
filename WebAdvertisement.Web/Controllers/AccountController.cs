@@ -73,7 +73,7 @@ namespace WebAdvertisement.Web.Controllers
                 var user = await _userManager.FindByEmailAsync(model.Email);
                 if (user is null)
                 {
-                    ModelState.AddModelError("NotFound", "A use with th given not found");
+                    ModelState.AddModelError("NotFound", "A user with the given email not found");
                     return View(model);
                 }
 
@@ -111,6 +111,58 @@ namespace WebAdvertisement.Web.Controllers
                     return RedirectToAction("Index", "Home");
                 
                 ModelState.AddModelError("LoginError","Email or password do not match");
+            }
+
+            return View(model);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> PasswordRecreate(PasswordRecreateViewModel model)
+        {
+            return View(model);
+        }
+        [HttpPost]
+        public async Task<IActionResult> RedirectToForgotPassword(PasswordRecreateViewModel model)
+        {
+            var user = await _userManager.FindByEmailAsync(model.Email ?? string.Empty);
+            if (user is null)
+            {
+                ModelState.AddModelError("NotFound", "A user with the given email not found");
+                return RedirectToAction("PasswordRecreate");
+            }
+
+            var result = await ((CognitoUserManager<CognitoUser>)_userManager).ResetPasswordAsync(user);
+            if(result.Succeeded)
+                return RedirectToAction("ForgetPassword");
+
+            return RedirectToAction("PasswordRecreate");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ForgetPassword(ForgetPasswordViewModel model)
+        {
+            return View(model);
+        }
+        [HttpPost]
+        public async Task<IActionResult> RecreatePassword(ForgetPasswordViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var user = await _userManager.FindByEmailAsync(model.Email);
+                if (user is null)
+                {
+                    ModelState.AddModelError("NotFound", "A user with the given email not found");
+                    return View(model);
+                }
+
+                var result = await ((CognitoUserManager<CognitoUser>)_userManager).ResetPasswordAsync(user, model.Code, model.NewPassword);
+                if (!result.Succeeded)
+                {
+                    ModelState.AddModelError("NotFound", "Something went wrong. Try again!");
+                    return View(model);
+                }
+
+                return RedirectToAction("Index", "Home");
             }
 
             return View(model);
