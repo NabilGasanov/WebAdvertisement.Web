@@ -155,14 +155,15 @@ namespace WebAdvertisement.Web.Controllers
                     return View(model);
                 }
 
-                var result = await ((CognitoUserManager<CognitoUser>)_userManager).ResetPasswordAsync(user, model.Code, model.NewPassword);
-                if (!result.Succeeded)
+                try
                 {
-                    ModelState.AddModelError("NotFound", "Something went wrong. Try again!");
-                    return View(model);
+                    await user.ConfirmForgotPasswordAsync(model.Code, model.NewPassword);
+                    return RedirectToAction("Index", "Home");
                 }
-
-                return RedirectToAction("Index", "Home");
+                catch(Exception ex)
+                {
+                    throw new Exception("Something went wrong.");
+                }
             }
 
             return View(model);
